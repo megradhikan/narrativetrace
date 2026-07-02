@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.0 — Topic classification + static dashboard
+
+- Zero-shot topic classification via `facebook/bart-large-mnli` assigns each cluster one of: politics, health, finance, natural disaster, entertainment, other
+- Background classification job tags unclassified clusters every 30s (daemon thread, non-blocking)
+- FastAPI backend with `GET /clusters` (filterable by topic), `GET /clusters/{id}`, `GET /topics`, `GET /health`
+- React dashboard (Vite): topic sidebar filter, sortable cluster table with topic badges, polling every 5s, cluster detail slide-out panel
+- 33/33 tests pass (10 new: 4 classifier unit tests + 6 API endpoint tests)
+
 ## v0.2.0 — Claim extraction + clustering
 
 - Embed each post with `sentence-transformers` (`all-MiniLM-L6-v2`, 384-dim, unit-normalised)
