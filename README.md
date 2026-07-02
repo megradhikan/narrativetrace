@@ -6,6 +6,28 @@ Live claim-clustering and coordination-signal detection over the Bluesky AT Prot
 
 ---
 
+## v0.2 — Claim extraction + clustering
+
+Embeds each post with `sentence-transformers` (`all-MiniLM-L6-v2`) and clusters posts by semantic similarity using cosine distance against live cluster centroids. A background job re-clusters every 10 minutes (merging similar clusters, splitting low-cohesion ones).
+
+```bash
+# Run the combined ingestion + clustering pipeline
+python -m clustering.run
+
+# Print a table of active clusters
+python -m clustering.report
+```
+
+Requires `pgvector` installed in your Postgres instance:
+```bash
+# macOS via Homebrew (if using Homebrew Postgres)
+brew install pgvector
+# or via psql after connecting:
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+---
+
 ## v0.1 — Firehose ingestion
 
 This version connects to the Bluesky public firehose, filters to text posts, and persists them to Postgres.
@@ -119,3 +141,7 @@ narrativetrace/
 | `FIREHOSE_HOST` | `bsky.network` | AT Protocol firehose host |
 | `RECONNECT_BASE_DELAY` | `1` | Initial reconnect wait (seconds) |
 | `RECONNECT_MAX_DELAY` | `60` | Maximum reconnect wait (seconds) |
+| `CLUSTER_SIMILARITY_THRESHOLD` | `0.75` | Cosine similarity threshold for cluster assignment. Higher = stricter (fewer merges). Default chosen to group clear paraphrases without merging loosely related claims. |
+| `CLUSTER_ACTIVE_HOURS` | `24` | How many hours back to consider clusters active for matching |
+| `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | Sentence-transformers model name |
+| `RECLUSTER_INTERVAL_SECONDS` | `600` | How often the re-clustering job runs (seconds) |
