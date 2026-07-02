@@ -1,0 +1,3 @@
+atproto>=0.0.55
+psycopg2-binary>=2.9
+pytest>=8.0
