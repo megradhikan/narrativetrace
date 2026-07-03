@@ -18,6 +18,8 @@ from ingestion.firehose import stream_posts
 from clustering.clusterer import process_post
 from clustering.db import init_cluster_tables
 from clustering.recluster import start_background
+from graph.db import init_graph_tables
+from graph.builder import record_interactions
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,6 +46,7 @@ def main():
     conn = get_connection()
     init_db(conn)
     init_cluster_tables(conn)
+    init_graph_tables(conn)
     conn.close()
 
     logger.info("Starting re-clustering background job...")
@@ -68,6 +71,7 @@ def main():
             )
 
             cluster_id = process_post(conn, post["post_id"], post["text"])
+            record_interactions(conn, post, cluster_id)
             count += 1
 
             elapsed = time.monotonic() - window_start
