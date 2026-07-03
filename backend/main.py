@@ -18,6 +18,8 @@ from pydantic import BaseModel
 from ingestion.db import get_connection, init_db
 from clustering.db import init_cluster_tables
 from clustering.classify_job import init_topic_columns, start_background as start_classify
+from graph.db import init_graph_tables, get_edges_for_cluster
+from graph.builder import load_cluster_graph, graph_to_dict
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,7 @@ async def lifespan(app: FastAPI):
     init_db(conn)
     init_cluster_tables(conn)
     init_topic_columns(conn)
+    init_graph_tables(conn)
     conn.close()
     start_classify()
     yield
@@ -148,6 +151,21 @@ def list_topics():
                 ORDER BY cluster_count DESC
             """)
             return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+@app.get("/clusters/{cluster_id}/graph")
+def get_cluster_graph(cluster_id: str):
+    """Return the interaction graph for a cluster as nodes + links."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT cluster_id FROM clusters WHERE cluster_id = %s", (cluster_id,))
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail="Cluster not found")
+        G = load_cluster_graph(conn, cluster_id)
+        return graph_to_dict(G)
     finally:
         conn.close()
 
