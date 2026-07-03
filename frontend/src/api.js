@@ -25,3 +25,9 @@ export async function fetchStats() {
   if (!res.ok) throw new Error(`GET /stats failed: ${res.status}`);
   return res.json();
 }
+
+export async function fetchAlerts() {
+  const res = await fetch(`${BASE}/alerts`);
+  if (!res.ok) throw new Error(`GET /alerts failed: ${res.status}`);
+  return res.json();
+}

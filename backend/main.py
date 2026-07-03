@@ -23,6 +23,8 @@ from clustering.db import init_cluster_tables
 from clustering.classify_job import init_topic_columns, start_background as start_classify
 from graph.db import init_graph_tables, get_edges_for_cluster
 from graph.builder import load_cluster_graph, graph_to_dict
+from coordination.db import init_alerts_table, get_alerts
+from coordination.job import start_background as start_coordination
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +36,10 @@ async def lifespan(app: FastAPI):
     init_cluster_tables(conn)
     init_topic_columns(conn)
     init_graph_tables(conn)
+    init_alerts_table(conn)
     conn.close()
     start_classify()
+    start_coordination()
     yield
 
 
@@ -176,10 +180,16 @@ def get_stats():
                 WHERE ingested_at > NOW() - INTERVAL '1 minute'
             """)
             posts_last_minute = cur.fetchone()["cnt"]
+            cur.execute("""
+                SELECT COUNT(*) AS cnt FROM coordination_alerts
+                WHERE resolved = FALSE
+            """)
+            active_alerts = cur.fetchone()["cnt"]
         return {
             "total_posts": total_posts,
             "active_clusters": active_clusters,
             "posts_last_minute": posts_last_minute,
+            "active_alerts": active_alerts,
             "firehose_status": "connected",
         }
     finally:
@@ -314,6 +324,19 @@ def get_cluster_graph(cluster_id: str):
                 raise HTTPException(status_code=404, detail="Cluster not found")
         G = load_cluster_graph(conn, cluster_id)
         return graph_to_dict(G)
+    finally:
+        conn.close()
+
+
+@app.get("/alerts")
+def list_alerts(resolved: bool = Query(False), limit: int = Query(50, le=200)):
+    """
+    Return coordination signals flagged for review.
+    All items are labelled as signals for human review — not verdicts.
+    """
+    conn = get_connection()
+    try:
+        return get_alerts(conn, resolved=resolved, limit=limit)
     finally:
         conn.close()
 

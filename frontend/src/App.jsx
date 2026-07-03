@@ -5,6 +5,7 @@ import ClusterTable from "./components/ClusterTable";
 import TopicFilter from "./components/TopicFilter";
 import ClusterDetail from "./components/ClusterDetail";
 import StatsBar from "./components/StatsBar";
+import AlertsPanel from "./components/AlertsPanel";
 import "./App.css";
 
 const TOPIC_POLL_MS = 10000;
@@ -51,6 +52,8 @@ export default function App() {
       <div className="disclaimer">
         ⚠ NarrativeTrace surfaces coordination signals for human review only — it does not determine truth or label content as disinformation.
       </div>
+
+      <AlertsPanel onSelectCluster={setSelectedCluster} />
 
       <div className="app-body">
         <aside className="sidebar">
