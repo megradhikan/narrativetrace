@@ -1,52 +1,41 @@
 import { useState, useEffect, useCallback } from "react";
-import { fetchClusters, fetchTopics } from "./api";
+import { fetchTopics, fetchStats } from "./api";
+import { useClusterStream } from "./hooks/useClusterStream";
 import ClusterTable from "./components/ClusterTable";
 import TopicFilter from "./components/TopicFilter";
 import ClusterDetail from "./components/ClusterDetail";
+import StatsBar from "./components/StatsBar";
 import "./App.css";
 
-const POLL_INTERVAL_MS = 5000;
+const TOPIC_POLL_MS = 10000;
+const STATS_POLL_MS = 5000;
 
 export default function App() {
-  const [clusters, setClusters] = useState([]);
+  const { clusters: allClusters, wsStatus } = useClusterStream();
   const [topics, setTopics] = useState([]);
+  const [stats, setStats] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [selectedCluster, setSelectedCluster] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [lastRefresh, setLastRefresh] = useState(null);
 
-  const loadClusters = useCallback(async () => {
-    try {
-      const data = await fetchClusters(selectedTopic);
-      setClusters(data);
-      setLastRefresh(new Date());
-      setError(null);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedTopic]);
+  const visibleClusters = selectedTopic
+    ? allClusters.filter((c) => c.topic === selectedTopic)
+    : allClusters;
 
   const loadTopics = useCallback(async () => {
-    try {
-      const data = await fetchTopics();
-      setTopics(data);
-    } catch {
-      // non-fatal
-    }
+    try { setTopics(await fetchTopics()); } catch { /* non-fatal */ }
+  }, []);
+
+  const loadStats = useCallback(async () => {
+    try { setStats(await fetchStats()); } catch { /* non-fatal */ }
   }, []);
 
   useEffect(() => {
-    loadClusters();
     loadTopics();
-    const interval = setInterval(() => {
-      loadClusters();
-      loadTopics();
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [loadClusters, loadTopics]);
+    loadStats();
+    const t1 = setInterval(loadTopics, TOPIC_POLL_MS);
+    const t2 = setInterval(loadStats, STATS_POLL_MS);
+    return () => { clearInterval(t1); clearInterval(t2); };
+  }, [loadTopics, loadStats]);
 
   return (
     <div className="app">
@@ -55,13 +44,9 @@ export default function App() {
           <h1>NarrativeTrace</h1>
           <span className="subtitle">Live claim cluster monitor · Bluesky / AT Protocol</span>
         </div>
-        <div className="header-right">
-          {lastRefresh && (
-            <span className="last-refresh">Updated {lastRefresh.toLocaleTimeString()}</span>
-          )}
-          <span className="cluster-count">{clusters.length} active clusters</span>
-        </div>
       </header>
+
+      <StatsBar stats={stats} wsStatus={wsStatus} />
 
       <div className="disclaimer">
         ⚠ NarrativeTrace surfaces coordination signals for human review only — it does not determine truth or label content as disinformation.
@@ -77,14 +62,15 @@ export default function App() {
         </aside>
 
         <main className="main-content">
-          {error && <div className="error-banner">⚠ {error}</div>}
-          {loading && clusters.length === 0 ? (
-            <div className="loading">Loading clusters…</div>
-          ) : clusters.length === 0 ? (
-            <div className="empty">No active clusters{selectedTopic ? ` for topic "${selectedTopic}"` : ""}.</div>
+          {visibleClusters.length === 0 ? (
+            <div className="empty">
+              {wsStatus === "connected"
+                ? `No active clusters${selectedTopic ? ` for topic "${selectedTopic}"` : ""}.`
+                : "Connecting to live stream…"}
+            </div>
           ) : (
             <ClusterTable
-              clusters={clusters}
+              clusters={visibleClusters}
               onSelect={setSelectedCluster}
               selectedId={selectedCluster?.cluster_id}
             />

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.0 — Live graph construction + real-time dashboard
+
+- **Branch A — graph construction:** Extract repost/quote/reply edges from firehose records; persist to `graph_edges` table; reconstruct per-cluster `networkx.DiGraph` from Postgres at any time; `GET /clusters/{id}/graph` REST endpoint
+- **Branch B — live dashboard:** WebSocket `GET /ws/clusters` pushes cluster snapshots every 3s; `GET /ws/clusters/{id}/graph` streams graph snapshots + incremental edge events; `GET /stats` endpoint (total posts, active clusters, posts/min); Stats bar with live connection indicator; `react-force-graph-2d` force-directed graph in cluster detail panel (updates live without page refresh); WebSocket reconnects automatically on drop
+- 48/48 tests pass (20 new: 15 graph + 5 WebSocket/stats)
+
 ## v0.3.0 — Topic classification + static dashboard
 
 - Zero-shot topic classification via `facebook/bart-large-mnli` assigns each cluster one of: politics, health, finance, natural disaster, entertainment, other
