@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchCluster } from "../api";
+import GraphView from "./GraphView";
 
 export default function ClusterDetail({ clusterId, onClose }) {
   const [data, setData] = useState(null);
@@ -31,6 +32,7 @@ export default function ClusterDetail({ clusterId, onClose }) {
               {data.topic && <span>Topic: <strong>{data.topic}</strong></span>}
               {data.topic_score && <span>Confidence: {(data.topic_score * 100).toFixed(0)}%</span>}
             </div>
+            <GraphView clusterId={clusterId} />
             <ul className="post-list">
               {data.posts.map((p) => (
                 <li key={p.post_id} className="post-item">
