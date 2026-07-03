@@ -27,7 +27,7 @@ def client():
 
 class TestStatsEndpoint:
     def test_stats_returns_expected_fields(self, client):
-        mock_rows = [{"total": 1234}, {"cnt": 42}, {"cnt": 7}]
+        mock_rows = [{"total": 1234}, {"cnt": 42}, {"cnt": 7}, {"cnt": 2}]
         conn = MagicMock()
         cur = MagicMock()
         cur.__enter__ = lambda s: s
@@ -50,7 +50,7 @@ class TestStatsEndpoint:
         cur = MagicMock()
         cur.__enter__ = lambda s: s
         cur.__exit__ = MagicMock(return_value=False)
-        cur.fetchone.side_effect = [{"total": 0}, {"cnt": 0}, {"cnt": 0}]
+        cur.fetchone.side_effect = [{"total": 0}, {"cnt": 0}, {"cnt": 0}, {"cnt": 0}]
         conn.cursor.return_value = cur
 
         with patch("backend.main.get_connection", return_value=conn):

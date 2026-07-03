@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.5.0 — Coordination detection
+
+- Coordination heuristic: timing (≥3 distinct accounts post near-identical text within configurable window, default 2 min) + topology (no prior interaction overlap in cluster graph) → coordination signal
+- Every flag carries a mandatory plain-language explanation string (e.g. "3 accounts posted near-identical claims within 30 seconds, with no prior interaction overlap in the network. Coordination signal — flagged for review.")
+- Words "bot" and "disinformation" are prohibited everywhere in this module (enforced by tests)
+- `coordination_alerts` table persists all signals with explanation, accounts list, timing window, overlap flag
+- Background detection job runs every 60s across all active clusters
+- `GET /alerts` endpoint returns unresolved signals with explanation string (never a bare flag)
+- `GET /stats` now includes `active_alerts` count
+- AlertsPanel component: red-bordered section above cluster table, shows explanation + sample text, clicking navigates to cluster detail
+- Flagged alert count shown in stats bar (only when > 0)
+- 73/73 tests pass (20 new coordination tests: 3 timing-trigger, 3 organic-no-trigger, 3 overlap, 8 explanation-string, 2 config, 1 API)
+
 ## v0.4.0 — Live graph construction + real-time dashboard
 
 - **Branch A — graph construction:** Extract repost/quote/reply edges from firehose records; persist to `graph_edges` table; reconstruct per-cluster `networkx.DiGraph` from Postgres at any time; `GET /clusters/{id}/graph` REST endpoint
